@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>ML-FINAL_PROJECT · Estimador de preços — casas em {{ city_name }}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+{% if meta %}<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">{% endif %}
+<style>
+  #mapa{height:340px;margin:12px 0}
+  @media(max-width:550px){body .grid{grid-template-columns:1fr 1fr}}
+  body{font-family:Arial, sans-serif; max-width:900px; margin:24px auto; padding:0 12px; color:#222}
+  h1{font-size:22px}
+  p.sub{color:#555; margin-top:-8px}
+  fieldset{border:1px solid #ccc; border-radius:6px; padding:12px 16px; margin-bottom:16px}
+  label{display:block; margin-top:8px; font-size:13px; font-weight:bold}
+  input[type=text], input[type=number]{width:100%; padding:6px; box-sizing:border-box; margin-top:2px}
+  .grid{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px}
+  .checks{display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:8px; font-weight:normal}
+  .checks label{font-weight:normal; display:flex; gap:6px; align-items:center}
+  button{margin-top:14px; padding:10px 16px; background:#1858c4; color:#fff; border:0; border-radius:4px; font-size:15px; cursor:pointer}
+  button:disabled{background:#9db4d8; cursor:wait}
+  #resultado{display:none; border:1px solid #ccc; border-radius:6px; padding:12px 16px; margin-bottom:16px}
+  .preco{font-size:28px; font-weight:bold}
+  .aviso{margin-top:10px; padding:8px; background:#fdf6e6; border-left:3px solid #d9a300; font-size:13px}
+  .erro{margin-top:10px; padding:8px; background:#fdeceb; border-left:3px solid #c0392b; font-size:13px}
+  .metricas{font-size:13px; color:#555; margin-top:8px}
+</style>
+</head>
+<body>
+<p>ML-FINAL_PROJECT</p>
+<h1>Preço anunciado de casas em {{ city_name }}/PR</h1>
+<p>A estimativa usa valores pedidos nos anúncios. O preço negociado na venda pode ser diferente.</p>
+{% if meta %}
+<p class="sub">
+  K-Means agrupa as coordenadas + K-Nearest Neighbors estima o preço a
+  partir dos {{ meta.knn_best_k }} imóveis mais parecidos ({{ meta.n_train }} imóveis no treino).
+</p>
+
+<fieldset>
+  <legend>Características do imóvel</legend>
+  <form id="form">
+    {% csrf_token %}
+    <label for="endereco">Endereço (rua ou avenida)</label>
+    <input type="text" id="endereco" placeholder="Avenida Higienópolis" required>
+
+    <div class="grid">
+      <div><label for="area">Área útil (m²)</label><input type="number" id="area" value="120" min="20" max="2000" required></div>
+      <div><label for="quartos">Quartos</label><input type="number" id="quartos" value="3" min="0" max="12"></div>
+      <div><label for="banheiros">Banheiros</label><input type="number" id="banheiros" value="2" min="0" max="12"></div>
+      <div><label for="suites">Suítes</label><input type="number" id="suites" value="1" min="0" max="8"></div>
+    </div>
+    <div class="grid">
+      <div><label for="vagas">Vagas de garagem</label><input type="number" id="vagas" value="1" min="0" max="10"></div>
+    </div>
+
+    <label>Comodidades</label>
+    <div class="checks">
+      {% for code, nome in amenidades %}
+      <label><input type="checkbox" class="am" value="{{ code }}"> {{ nome }}</label>
+      {% endfor %}
+      <label><input type="checkbox" id="condominio"> Em condomínio</label>
+    </div>
+
+    <button type="submit" id="btn">Estimar preço</button>
+  </form>
+</fieldset>
+
+<div id="resultado" aria-live="polite">
+  <div class="preco" id="preco">—</div>
+  <div id="faixa"></div>
+  <div id="zona"></div>
+  <div id="viz"></div>
+  <div class="aviso" id="aviso" style="display:none"></div>
+</div>
+<div role="alert" class="erro" id="erro" style="display:none"></div>
+
+<div class="metricas">
+  Avaliação em {{ meta.n_test }} imóveis de teste ({{ meta.split.tipo }}) ·
+  Cobertura observada do intervalo: {{ meta.intervalo.cobertura_teste_pct|floatformat:1 }}% ·
+  Regiões (k): {{ meta.k }} ·
+  MAE: R$ {{ meta.metrics.mae|floatformat:0 }} ·
+  MAPE: {{ meta.metrics.mape|floatformat:1 }}% ·
+  R²: {{ meta.metrics.r2|floatformat:3 }} ·
+  algoritmo: {{ meta.algorithm }} (k={{ meta.knn_best_k }})
+</div>
+
+<h2>Imóveis de treino por região</h2>
+<div id="mapa" aria-label="Mapa dos anúncios de treino em Londrina"></div>
+<p id="map-status" role="status"></p>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+<script>
+async function desenharMapa() {
+  const mapa = L.map("mapa").setView([-23.3122, -51.1597], 12);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(mapa);
+  const res = await fetch("{% url 'pontos' %}");
+  if (!res.ok) throw Error();
+  for (const p of await res.json()) {
+    L.circleMarker([p.lat, p.lon], {radius: 4, color: "hsl(" + (p.z * 137 % 360) + ",65%,38%)"})
+      .bindTooltip("Região " + p.z).addTo(mapa);
+  }
+}
+desenharMapa().catch(() => document.getElementById("map-status").textContent = "Mapa indisponível.");
+const BRL = n => n.toLocaleString("pt-BR", {style:"currency", currency:"BRL", maximumFractionDigits:0});
+
+document.getElementById("form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const btn = document.getElementById("btn");
+  btn.disabled = true; btn.textContent = "Calculando…";
+
+  const payload = {
+    endereco: document.getElementById("endereco").value,
+    area: document.getElementById("area").value,
+    quartos: document.getElementById("quartos").value,
+    banheiros: document.getElementById("banheiros").value,
+    suites: document.getElementById("suites").value,
+    vagas: document.getElementById("vagas").value,
+    condominio: document.getElementById("condominio").checked,
+    n_amenities: document.querySelectorAll(".am:checked").length,
+  };
+
+  const box = document.getElementById("resultado");
+  const erroEl = document.getElementById("erro");
+  const avisoEl = document.getElementById("aviso");
+  box.style.display = "none";
+  erroEl.style.display = "none";
+
+  try {
+    const res = await fetch("/api/estimar/", {method:"POST", headers:{"Content-Type":"application/json", "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value}, body:JSON.stringify(payload)});
+    const d = await res.json();
+
+    if (d.erro) {
+      erroEl.textContent = d.erro; erroEl.style.display = "block";
+      avisoEl.style.display = "none";
+      document.getElementById("preco").textContent = "—";
+      document.getElementById("faixa").textContent = "";
+    } else {
+      box.style.display = "block";
+      erroEl.style.display = "none";
+      document.getElementById("preco").textContent = BRL(d.preco);
+      document.getElementById("faixa").textContent = "Intervalo de previsão (alvo de 80%): " + BRL(d.intervalo_min) + " — " + BRL(d.intervalo_max);
+      document.getElementById("zona").textContent = "Região " + d.zona + " — " + (d.zona_bairros || []).slice(0, 2).join(", ") + " (densidade de anúncios: " + d.confianca + ")";
+      document.getElementById("viz").textContent = d.vizinhos_2km + " imóveis num raio de 2 km";
+
+      if (d.aviso) { avisoEl.textContent = d.aviso; avisoEl.style.display = "block"; }
+      else avisoEl.style.display = "none";
+    }
+  } catch (e) {
+    erroEl.textContent = "Falha ao consultar o servidor."; erroEl.style.display = "block";
+  } finally {
+    btn.disabled = false; btn.textContent = "Estimar preço";
+  }
+});
+</script>
+{% else %}
+<p role="status">Modelo ainda indisponível. Prepare o dataset e execute <code>python train.py</code> para habilitar as estimativas e o mapa.</p>
+{% endif %}
+</body>
+</html>
