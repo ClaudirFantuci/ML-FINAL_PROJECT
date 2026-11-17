@@ -1,0 +1,41 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Preparar CSV, treinar e iniciar Django",
+      "type": "debugpy",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "console": "internalConsole",
+      "justMyCode": true,
+      "env": {
+        "PYTHONUNBUFFERED": "1",
+        "LOKY_MAX_CPU_COUNT": "2"
+      },
+      "program": "${workspaceFolder}/run_local.py",
+      "args": [
+        "${workspaceFolder}/../daatse/casas_venda_londrina_zap.csv"
+      ]
+    },
+    {
+      "name": "Iniciar Django com modelo treinado",
+      "type": "debugpy",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "console": "internalConsole",
+      "justMyCode": true,
+      "env": {
+        "PYTHONUNBUFFERED": "1",
+        "LOKY_MAX_CPU_COUNT": "2"
+      },
+      "program": "${workspaceFolder}/manage.py",
+      "args": [
+        "runserver",
+        "127.0.0.1:8000",
+        "--noreload"
+      ]
+    }
+  ]
+}

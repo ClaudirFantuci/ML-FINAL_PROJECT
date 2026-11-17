@@ -1,6 +1,6 @@
 # ML-FINAL_PROJECT
 
-Estimador acadêmico do **preço anunciado de casas em Londrina/PR**, com interface Django, mapa de anúncios de treino e previsão por vizinhos semelhantes (KNN). A base representa a oferta publicada nos portais consultados. Preços efetivos de escritura e imóveis fora desses portais ficam fora do escopo.
+Estimador acadêmico do **preço anunciado de casas em Londrina/PR**, com interface Django e previsão por vizinhos semelhantes (KNN). A base representa a oferta publicada nos portais consultados. Preços efetivos de escritura e imóveis fora desses portais ficam fora do escopo.
 
 ## Executar no Windows
 
@@ -40,7 +40,7 @@ A coleta aceita ZAP ou Viva Real, que compartilham parte do estoque. Faz consult
 
 ## Interface e serviços
 
-O formulário envia consultas para `/api/estimar/` com token CSRF. A API valida limites e relações entre os campos e limita consultas por IP. O endereço é conferido com os dados de município e estado retornados pelo Nominatim. O mapa Leaflet consome `/api/pontos/` e mostra até 1.500 anúncios de treino. As consultas de endereço, o fundo cartográfico e os arquivos do Leaflet usam serviços externos.
+O formulário envia consultas para `/api/estimar/` com token CSRF. A API valida limites e relações entre os campos e limita consultas por IP. O endereço é conferido com os dados de município e estado retornados pelo Nominatim. A página apresenta a estimativa, o intervalo de previsão e a densidade local. Apenas a busca de endereços depende de um serviço externo.
 
 Por padrão, o Django aceita hosts locais e mantém o modo de depuração desligado. Para publicação, configure `DJANGO_ENV=production`, `DJANGO_SECRET_KEY` e `DJANGO_ALLOWED_HOSTS` com nomes explícitos e disponibilize HTTPS. A limitação de consultas e o controle de frequência do geocodificador são por processo. Para várias instâncias, centralize a quota e o agendamento das consultas externas.
 
@@ -52,4 +52,4 @@ Por padrão, o Django aceita hosts locais e mantém o modo de depuração deslig
 ```
 
 A suíte usa anúncios sintéticos, diretórios temporários e geocodificação simulada. As métricas de desempenho imobiliário dependem de treino e teste com anúncios reais.
-"# ML-FINAL_PROJECT" 
+"# ML-FINAL_PROJECT"

@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+raw/
+staged/
+models/*.joblib
+models/*.parquet
+models/meta.json
+models/geocode_cache.json
+db.sqlite3
+
+models/treino-*/
+models/CURRENT
+models/*.tmp
+models/geocode_municipio.json

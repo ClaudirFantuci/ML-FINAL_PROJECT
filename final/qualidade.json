@@ -1,0 +1,45 @@
+{
+  "arquivo_fonte": "casas_venda_londrina_zap.csv",
+  "sha256_csv_original": "6de570e65a0dd1ffaa09d7012fa8d4a1185ab381260e27c412ed441a8bc17c18",
+  "linhas_brutas": 692,
+  "tipos_origem": {
+    "APARTMENT": 320,
+    "HOME": 240,
+    "CONDOMINIUM": 50,
+    "RESIDENTIAL_ALLOTMENT_LAND": 33,
+    "COMMERCIAL_PROPERTY": 13,
+    "OFFICE": 10,
+    "SHED_DEPOSIT_WAREHOUSE": 6,
+    "BUSINESS": 5,
+    "COMMERCIAL_ALLOTMENT_LAND": 5,
+    "FARM": 3,
+    "FLAT": 3,
+    "COMMERCIAL_BUILDING": 3,
+    "PENTHOUSE": 1
+  },
+  "descartes_sequenciais": {
+    "fora de Londrina/PR": 0,
+    "tipo fora de HOME/CONDOMINIUM": 402,
+    "ID ausente ou repetido": 0,
+    "coordenadas ausentes ou inválidas": 80,
+    "contagens ausentes ou fracionárias": 0,
+    "suítes excedem quartos ou banheiros informados": 7,
+    "demais limites do projeto (preço, área, preço/m², cômodos, distância)": 0
+  },
+  "linhas_finais": 203,
+  "grupos": 180,
+  "tipos_finais": {
+    "HOME": 171,
+    "CONDOMINIUM": 32
+  },
+  "bairros": 108,
+  "data_coleta": null,
+  "origem": "ZAP, exportação CSV fornecida pelo usuário",
+  "observacoes": [
+    "HOME e CONDOMINIUM interpretados como casas e casas em condomínio.",
+    "A exportação não indica precisão das coordenadas nem data da coleta.",
+    "Comodidades refletem apenas itens declarados. POOL equivale a SWIMMING_POOL.",
+    "A origem pode registrar características não informadas como zero.",
+    "O agrupamento por endereço ou coordenadas limita sobreposição na avaliação."
+  ]
+}
