@@ -1,0 +1,8 @@
+{
+  "faixas": [],
+  "unicos": 0,
+  "status": "interrompida",
+  "erro": "Coleta interrompida: HTTP 403.",
+  "requisicoes": 1,
+  "falhas_http": 1
+}
